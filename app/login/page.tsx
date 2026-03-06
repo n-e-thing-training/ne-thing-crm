@@ -14,31 +14,34 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setMessage(null);
+    try {
+      const supabase = createClient();
 
-    const supabase = createClient();
+      const response =
+        mode === "signin"
+          ? await supabase.auth.signInWithPassword({ email, password })
+          : await supabase.auth.signUp({
+              email,
+              password,
+              options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+            });
 
-    const response =
-      mode === "signin"
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
-          });
+      if (response.error) {
+        setMessage(response.error.message);
+        return;
+      }
 
-    if (response.error) {
-      setMessage(response.error.message);
+      if (mode === "signup") {
+        setMessage("Account created. Confirm email if required, then sign in.");
+        return;
+      }
+
+      window.location.href = "/dashboard";
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Authentication request failed.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (mode === "signup") {
-      setMessage("Account created. Confirm email if required, then sign in.");
-      setLoading(false);
-      return;
-    }
-
-    window.location.href = "/dashboard";
   }
 
   return (
